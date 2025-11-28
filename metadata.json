@@ -1,0 +1,5 @@
+{
+  "name": "Brevo AI Mailer",
+  "description": "A modern email marketing tool powered by Gemini AI and Brevo to design and send personalized emails.",
+  "requestFramePermissions": []
+}
