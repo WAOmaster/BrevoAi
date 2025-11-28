@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, FileText, Send, Settings, Sparkles, Mail } from 'lucide-react';
+import { LayoutDashboard, FileText, Send, Settings, Sparkles, Mail, History } from 'lucide-react';
 import { AppView } from '../types';
 
 interface SidebarProps {
@@ -13,6 +13,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) =
     { id: AppView.TEMPLATES, label: 'Templates', icon: FileText },
     { id: AppView.AI_GENERATOR, label: 'AI Generator', icon: Sparkles },
     { id: AppView.EDITOR, label: 'Composer', icon: Send },
+    { id: AppView.SENT_ITEMS, label: 'Sent Items', icon: History },
     { id: AppView.SETTINGS, label: 'Settings', icon: Settings },
   ];
 
