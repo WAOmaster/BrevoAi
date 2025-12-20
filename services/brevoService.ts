@@ -1,5 +1,5 @@
 import { BREVO_API_URL } from '../constants';
-import { Sender, Recipient } from '../types';
+import { Sender, Recipient, Attachment } from '../types';
 
 interface SendEmailParams {
   apiKey: string;
@@ -7,14 +7,26 @@ interface SendEmailParams {
   to: Recipient[];
   subject: string;
   htmlContent: string;
+  attachment?: Attachment[];
 }
 
-export const sendEmail = async ({ apiKey, sender, to, subject, htmlContent }: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> => {
+export const sendEmail = async ({ apiKey, sender, to, subject, htmlContent, attachment }: SendEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> => {
   if (!apiKey) {
     return { success: false, error: 'Brevo API Key is missing. Please check Settings.' };
   }
 
   try {
+    const body: any = {
+      sender,
+      to,
+      subject,
+      htmlContent
+    };
+
+    if (attachment && attachment.length > 0) {
+      body.attachment = attachment;
+    }
+
     const response = await fetch(BREVO_API_URL, {
       method: 'POST',
       headers: {
@@ -22,12 +34,7 @@ export const sendEmail = async ({ apiKey, sender, to, subject, htmlContent }: Se
         'api-key': apiKey,
         'content-type': 'application/json'
       },
-      body: JSON.stringify({
-        sender,
-        to,
-        subject,
-        htmlContent
-      })
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {

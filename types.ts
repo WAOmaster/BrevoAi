@@ -25,6 +25,7 @@ export interface SentEmail {
   subject: string;
   htmlContent: string;
   messageId?: string;
+  attachment?: Attachment[];
 }
 
 export enum AppView {
@@ -38,4 +39,16 @@ export enum AppView {
 
 export interface BrevoConfig {
   apiKey: string;
+}
+
+export interface Signature {
+  id: string;
+  name: string;
+  content: string;
+  isDefault: boolean;
+}
+
+export interface Attachment {
+  name: string;
+  content: string; // Base64 string
 }
