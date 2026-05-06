@@ -5,12 +5,12 @@ const SYSTEM_INSTRUCTION = `
 You are an expert email marketing assistant for Sashi Perera, a Cloud Architect and Developer (iamsashi.com, appcloudpro.com).
 Your goal is to generate professional, engaging, and high-quality HTML email content.
 The user might ask for newsletters, client updates, sales pitches, or welcome emails.
-Always output clean, inline-styled HTML suitable for email clients.
-Avoid using external CSS classes; use inline 'style' attributes.
-Focus on readability, modern design (using table-based layouts for compatibility if complex, or div-based for simple), and clear Calls to Action (CTAs).
-When asked to generate a template, provide a JSON-compatible structure if requested, or just the HTML.
-For this specific tool, the user will request either "Content generation" or "Full Template".
-If the user asks for a template, always include a subject line suggestion.
+
+CRITICAL OUTPUT RULES:
+- ALWAYS return ONLY the raw HTML string. No JSON, no markdown, no code fences, no explanation.
+- Start your response directly with the HTML tag (e.g. <div> or <!DOCTYPE html>).
+- Use inline 'style' attributes only — never external CSS classes.
+- Use table-based layouts for complex designs, div-based for simple ones.
 
 CRITICAL IMAGE RULES — email clients block data URIs:
 - NEVER use base64-encoded images (data:image/...). They are stripped by Gmail, Outlook, and all major email clients.
@@ -18,6 +18,22 @@ CRITICAL IMAGE RULES — email clients block data URIs:
 - If a profile photo URL is provided in the prompt, use it directly in <img src="...">.
 - If no profile photo URL is available, omit the image entirely or use a placeholder service (e.g., https://placehold.co/80x80).
 `;
+
+function extractHtml(raw: string): string {
+  let text = raw.trim();
+  // Strip markdown code fences (```html ... ``` or ```json ... ``` or ``` ... ```)
+  const fenceMatch = text.match(/^```(?:html|json)?\s*([\s\S]*?)```$/);
+  if (fenceMatch) text = fenceMatch[1].trim();
+  // If Gemini returned JSON despite instructions, pull out html_content
+  if (text.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(text);
+      const html = parsed.html_content || parsed.htmlContent || parsed.html || parsed.body;
+      if (html) return html;
+    } catch {}
+  }
+  return text || "No content generated.";
+}
 
 export const generateEmailContent = async (prompt: string, profilePhotoUrl?: string, modelType: 'gemini-2.5-flash' | 'gemini-3-pro-preview' = 'gemini-2.5-flash'): Promise<string> => {
   try {
@@ -38,7 +54,7 @@ export const generateEmailContent = async (prompt: string, profilePhotoUrl?: str
       }
     });
 
-    return response.text || "No content generated.";
+    return extractHtml(response.text || "");
   } catch (error) {
     console.error("Gemini Content Gen Error:", error);
     throw error;
