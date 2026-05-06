@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { AppView, EmailTemplate, Sender, SentEmail } from './types';
-import { INITIAL_TEMPLATES, SENDERS } from './constants';
+import { INITIAL_TEMPLATES, SENDERS, THEMED_TEMPLATES } from './constants';
 import { TemplateCard } from './components/TemplateCard';
 import { SettingsPanel } from './components/SettingsPanel';
 import { sendEmail } from './services/brevoService';
 import { generateEmailContent, suggestSubjectLines } from './services/geminiService';
-import { Sparkles, Send, Loader2, ArrowLeft, Wand2, CheckCircle, XCircle, FileText, History, Repeat, Trash2, ImageOff } from 'lucide-react';
+import { Sparkles, Send, Loader2, ArrowLeft, Wand2, CheckCircle, XCircle, FileText, History, Repeat, Trash2, ImageOff, Palette } from 'lucide-react';
+import { EMAIL_THEMES, getTheme } from './themes';
 
 // Main App Component
 const App: React.FC = () => {
@@ -28,6 +29,9 @@ const App: React.FC = () => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTemplates, setGeneratedTemplates] = useState<EmailTemplate[]>([]);
+
+  // Theme State
+  const [selectedThemeId, setSelectedThemeId] = useState<string>('none');
 
   // Sent Items State
   const [sentEmails, setSentEmails] = useState<SentEmail[]>([]);
@@ -53,6 +57,8 @@ const App: React.FC = () => {
     setSelectedTemplate(template);
     setSubject(template.subject);
     setHtmlContent(template.htmlContent);
+    const themed = THEMED_TEMPLATES.find(t => t.id === template.id);
+    setSelectedThemeId(themed ? themed.themeId : 'none');
     setCurrentView(AppView.EDITOR);
     setSendResult(null);
   };
@@ -63,12 +69,13 @@ const App: React.FC = () => {
     setIsSending(true);
     setSendResult(null);
 
+    const themedHtml = getTheme(selectedThemeId).wrap(htmlContent, profilePhotoUrl || undefined);
     const result = await sendEmail({
       apiKey: brevoKey,
       sender,
       to: [{ email: recipientEmail, name: recipientName || recipientEmail.split('@')[0] }],
       subject,
-      htmlContent
+      htmlContent: themedHtml
     });
 
     setIsSending(false);
@@ -206,6 +213,19 @@ const App: React.FC = () => {
         </button>
       </div>
       
+      {THEMED_TEMPLATES.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-slate-700 mb-3 flex items-center gap-2">
+            <Palette className="w-4 h-4" /> Branded Templates
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {THEMED_TEMPLATES.map(t => (
+              <TemplateCard key={t.id} template={t} onSelect={handleTemplateSelect} />
+            ))}
+          </div>
+          <h3 className="text-lg font-semibold text-slate-700 mb-3">All Templates</h3>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...generatedTemplates, ...INITIAL_TEMPLATES].map(t => (
           <TemplateCard key={t.id} template={t} onSelect={handleTemplateSelect} />
@@ -424,18 +444,41 @@ const App: React.FC = () => {
 
          {/* Preview Side */}
          <div className="w-full lg:w-1/2 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex flex-col h-[500px] lg:h-full shrink-0">
-            <div className="bg-white border-b border-slate-200 px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider flex justify-between items-center shrink-0">
-               <span>Preview</span>
+            <div className="bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center shrink-0 gap-3 flex-wrap">
+               <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                 <span>Preview</span>
+               </div>
+               {/* Theme Picker */}
+               <div className="flex items-center gap-2 flex-wrap">
+                 <Palette className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                 {EMAIL_THEMES.map(theme => (
+                   <button
+                     key={theme.id}
+                     onClick={() => setSelectedThemeId(theme.id)}
+                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                       selectedThemeId === theme.id
+                         ? 'border-transparent text-white shadow-sm'
+                         : 'border-slate-200 text-slate-500 hover:border-slate-300 bg-white'
+                     }`}
+                     style={selectedThemeId === theme.id ? { backgroundColor: theme.accentColor } : {}}
+                   >
+                     {theme.id !== 'none' && (
+                       <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ backgroundColor: theme.accentColor }} />
+                     )}
+                     {theme.name}
+                   </button>
+                 ))}
+               </div>
                <div className="flex gap-1.5">
                  <div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
                  <div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
                </div>
             </div>
-            <div className="flex-1 overflow-auto bg-white p-4 custom-scrollbar">
+            <div className="flex-1 overflow-auto bg-slate-100 custom-scrollbar">
                {htmlContent ? (
-                 <div className="w-full h-full border-none" dangerouslySetInnerHTML={{ __html: htmlContent }} />
+                 <div dangerouslySetInnerHTML={{ __html: getTheme(selectedThemeId).wrap(htmlContent, profilePhotoUrl || undefined) }} />
                ) : (
-                 <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                 <div className="flex flex-col items-center justify-center h-full text-slate-400 p-8">
                     <FileText className="w-12 h-12 mb-2 opacity-50" />
                     <p>No content to preview</p>
                  </div>
