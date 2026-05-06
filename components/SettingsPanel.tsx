@@ -17,8 +17,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const [localKey, setLocalKey] = useState(brevoKey);
   const [localPhotoUrl, setLocalPhotoUrl] = useState(profilePhotoUrl);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [photoUrlError, setPhotoUrlError] = useState('');
 
   const handleSave = () => {
+    if (localPhotoUrl && !localPhotoUrl.startsWith('https://')) {
+      setPhotoUrlError('URL must start with https:// — email clients block non-HTTPS images.');
+      return;
+    }
+    setPhotoUrlError('');
     onSaveBrevoKey(localKey);
     onSaveProfilePhotoUrl(localPhotoUrl);
     setShowSuccess(true);
@@ -49,17 +55,28 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <input
               type="url"
               value={localPhotoUrl}
-              onChange={(e) => setLocalPhotoUrl(e.target.value)}
+              onChange={(e) => { setLocalPhotoUrl(e.target.value); setPhotoUrlError(''); }}
               placeholder="https://example.com/your-photo.jpg"
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all text-sm"
+              className={`w-full px-4 py-3 rounded-lg border focus:ring-2 outline-none transition-all text-sm ${
+                photoUrlError
+                  ? 'border-red-400 focus:ring-red-300'
+                  : 'border-slate-300 focus:ring-teal-500 focus:border-teal-500'
+              }`}
             />
-            <p className="mt-2 text-xs text-slate-500 flex items-start gap-1">
-              <AlertCircle className="w-3 h-3 mt-0.5 text-amber-500 shrink-0" />
-              <span>
-                Must be a publicly accessible <strong>https://</strong> URL. Base64/data-URI images are
-                blocked by Gmail, Outlook, and most email clients.
-              </span>
-            </p>
+            {photoUrlError ? (
+              <p className="mt-2 text-xs text-red-600 flex items-start gap-1">
+                <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+                {photoUrlError}
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-slate-500 flex items-start gap-1">
+                <AlertCircle className="w-3 h-3 mt-0.5 text-amber-500 shrink-0" />
+                <span>
+                  Must be a publicly accessible <strong>https://</strong> URL. Base64/data-URI images are
+                  blocked by Gmail, Outlook, and most email clients.
+                </span>
+              </p>
+            )}
           </div>
 
           {localPhotoUrl && (
