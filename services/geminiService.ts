@@ -11,18 +11,28 @@ Focus on readability, modern design (using table-based layouts for compatibility
 When asked to generate a template, provide a JSON-compatible structure if requested, or just the HTML.
 For this specific tool, the user will request either "Content generation" or "Full Template".
 If the user asks for a template, always include a subject line suggestion.
+
+CRITICAL IMAGE RULES — email clients block data URIs:
+- NEVER use base64-encoded images (data:image/...). They are stripped by Gmail, Outlook, and all major email clients.
+- ALWAYS use https:// URLs for every <img> src attribute.
+- If a profile photo URL is provided in the prompt, use it directly in <img src="...">.
+- If no profile photo URL is available, omit the image entirely or use a placeholder service (e.g., https://placehold.co/80x80).
 `;
 
-export const generateEmailContent = async (prompt: string, modelType: 'gemini-2.5-flash' | 'gemini-3-pro-preview' = 'gemini-2.5-flash'): Promise<string> => {
+export const generateEmailContent = async (prompt: string, profilePhotoUrl?: string, modelType: 'gemini-2.5-flash' | 'gemini-3-pro-preview' = 'gemini-2.5-flash'): Promise<string> => {
   try {
     const apiKey = process.env.API_KEY;
     if (!apiKey) throw new Error("Gemini API Key missing");
 
     const ai = new GoogleGenAI({ apiKey });
     
+    const fullPrompt = profilePhotoUrl
+      ? `${prompt}\n\nProfile photo URL to use in <img src>: ${profilePhotoUrl}`
+      : prompt;
+
     const response = await ai.models.generateContent({
       model: modelType,
-      contents: prompt,
+      contents: fullPrompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
       }
