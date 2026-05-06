@@ -6,12 +6,13 @@ import { TemplateCard } from './components/TemplateCard';
 import { SettingsPanel } from './components/SettingsPanel';
 import { sendEmail } from './services/brevoService';
 import { generateEmailContent, suggestSubjectLines } from './services/geminiService';
-import { Sparkles, Send, Loader2, ArrowLeft, RefreshCw, Wand2, CheckCircle, XCircle, FileText, History, Repeat, Trash2 } from 'lucide-react';
+import { Sparkles, Send, Loader2, ArrowLeft, Wand2, CheckCircle, XCircle, FileText, History, Repeat, Trash2, ImageOff } from 'lucide-react';
 
 // Main App Component
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
   const [brevoKey, setBrevoKey] = useState<string>('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');
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>(() => localStorage.getItem('profile_photo_url') || '');
   
   // Editor State
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
@@ -42,6 +43,11 @@ const App: React.FC = () => {
       }
     }
   }, []);
+
+  const handleSaveProfilePhotoUrl = (url: string) => {
+    setProfilePhotoUrl(url);
+    localStorage.setItem('profile_photo_url', url);
+  };
 
   const handleTemplateSelect = (template: EmailTemplate) => {
     setSelectedTemplate(template);
@@ -95,7 +101,7 @@ const App: React.FC = () => {
     if (!aiPrompt) return;
     setIsGenerating(true);
     try {
-      const content = await generateEmailContent(`Create an HTML email for: ${aiPrompt}. Include inline CSS.`);
+      const content = await generateEmailContent(`Create an HTML email for: ${aiPrompt}. Include inline CSS.`, profilePhotoUrl || undefined);
       const subjects = await suggestSubjectLines(aiPrompt);
       
       const newTemplate: EmailTemplate = {
@@ -353,8 +359,41 @@ const App: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">HTML Content</label>
-                <textarea 
+                {(() => {
+                  const b64Count = (htmlContent.match(/src="data:image/gi) || []).length;
+                  return (
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-sm font-medium text-slate-700">HTML Content</label>
+                      {b64Count === 1 && profilePhotoUrl && (
+                        <button
+                          title="Replace the base64 profile photo with your hosted URL so it loads in email clients"
+                          onClick={() => setHtmlContent(htmlContent.replace(/src="data:image[^"]*"/, `src="${profilePhotoUrl}"`))}
+                          className="text-xs text-amber-600 font-medium hover:underline flex items-center gap-1"
+                        >
+                          <ImageOff className="w-3 h-3" /> Fix Image
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
+                {(() => {
+                  const b64Count = (htmlContent.match(/src="data:image/gi) || []).length;
+                  if (b64Count === 0) return null;
+                  if (b64Count === 1 && !profilePhotoUrl) return (
+                    <p className="mb-2 text-xs text-amber-600 flex items-center gap-1">
+                      <ImageOff className="w-3 h-3 shrink-0" />
+                      Base64 image detected — it will not load in email clients. Set a Profile Photo URL in Settings to fix it.
+                    </p>
+                  );
+                  if (b64Count > 1) return (
+                    <p className="mb-2 text-xs text-amber-600 flex items-center gap-1">
+                      <ImageOff className="w-3 h-3 shrink-0" />
+                      {b64Count} base64 images detected — they will not load in email clients. Replace each <code>src="data:image..."</code> with a hosted https:// URL.
+                    </p>
+                  );
+                  return null;
+                })()}
+                <textarea
                   className="w-full h-64 lg:h-full min-h-[200px] px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm resize-y lg:resize-none"
                   value={htmlContent}
                   onChange={(e) => setHtmlContent(e.target.value)}
@@ -467,7 +506,12 @@ const App: React.FC = () => {
            {currentView === AppView.AI_GENERATOR && renderAIGenerator()}
            {currentView === AppView.SENT_ITEMS && renderSentItems()}
            {currentView === AppView.SETTINGS && (
-             <SettingsPanel brevoKey={brevoKey} onSaveBrevoKey={setBrevoKey} />
+             <SettingsPanel
+               brevoKey={brevoKey}
+               onSaveBrevoKey={setBrevoKey}
+               profilePhotoUrl={profilePhotoUrl}
+               onSaveProfilePhotoUrl={handleSaveProfilePhotoUrl}
+             />
            )}
         </div>
       </main>
