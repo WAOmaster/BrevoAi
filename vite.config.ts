@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
       server: {
         port: parseInt(process.env.PORT || '8080'),
         host: '0.0.0.0',
-        allowedHosts: 'all',
+        allowedHosts: true,
       },
       plugins: [react()],
       define: {
