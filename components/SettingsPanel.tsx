@@ -122,7 +122,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <p className="mt-2 text-xs text-slate-500 flex items-start gap-1">
               <AlertCircle className="w-3 h-3 mt-0.5 text-amber-500 shrink-0" />
               <span>
-                Your API key is stored in local React state and used for direct API calls.
+                Saved in this browser only and sent only to Brevo. It is never part of the site&apos;s code.
                 Ensure your Brevo account allows calls from this origin, or use a proxy.
               </span>
             </p>
