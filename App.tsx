@@ -11,7 +11,7 @@ import { Sparkles, Send, Loader2, ArrowLeft, Wand2, CheckCircle, XCircle, FileTe
 // Main App Component
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
-  const [brevoKey, setBrevoKey] = useState<string>('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');
+  const [brevoKey, setBrevoKey] = useState<string>(() => localStorage.getItem('brevo_api_key') || '');
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>(() => localStorage.getItem('profile_photo_url') || '');
   
   // Editor State
@@ -47,6 +47,11 @@ const App: React.FC = () => {
   const handleSaveProfilePhotoUrl = (url: string) => {
     setProfilePhotoUrl(url);
     localStorage.setItem('profile_photo_url', url);
+  };
+
+  const handleSaveBrevoKey = (key: string) => {
+    setBrevoKey(key);
+    localStorage.setItem('brevo_api_key', key);
   };
 
   const handleTemplateSelect = (template: EmailTemplate) => {
@@ -508,7 +513,7 @@ const App: React.FC = () => {
            {currentView === AppView.SETTINGS && (
              <SettingsPanel
                brevoKey={brevoKey}
-               onSaveBrevoKey={setBrevoKey}
+               onSaveBrevoKey={handleSaveBrevoKey}
                profilePhotoUrl={profilePhotoUrl}
                onSaveProfilePhotoUrl={handleSaveProfilePhotoUrl}
              />
